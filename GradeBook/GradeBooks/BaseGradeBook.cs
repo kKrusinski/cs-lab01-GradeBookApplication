@@ -16,9 +16,10 @@ namespace GradeBook.GradeBooks
         public GradeBookType Type { get; set; }
         public bool IsWeighted { get; set; }
 
-        public BaseGradeBook(string name)
+        public BaseGradeBook(string name, bool isWeigthed)
         {
             Name = name;
+            IsWeighted = isWeigthed;
             Students = new List<Student>();
         }
 
@@ -94,14 +95,14 @@ namespace GradeBook.GradeBooks
                     var json = reader.ReadToEnd();
                     return ConvertToGradeBook(json);
                     var type = Enum.Parse(typeof(GradeBookType), JObject.GetValue("Type").ToString(), true);
-                    switch(type)
+                    switch (type)
                     {
                         case GradeBookType.Standard:
                             gradeBook = JsonConvert.DeserializeObject<StandardGradeBook>(json);
                             break;
                         case GradeBookType.Ranked:
                             gradeBook = JsonConvert.DeserializeObject<RankedGradeBook>(json);
-                            break;                         
+                            break;
                     }
 
                     return gradeBook;
@@ -123,20 +124,29 @@ namespace GradeBook.GradeBooks
 
         public virtual double GetGPA(char letterGrade, StudentType studentType)
         {
+            var gpa = 0;
             switch (letterGrade)
             {
                 case 'A':
-                    return 4;
+                    gpa = 4;
+                    break;
                 case 'B':
-                    return 3;
+                    gpa = 3;
+                    break;
                 case 'C':
-                    return 2;
+                    gpa = 2;
+                    break;
                 case 'D':
-                    return 1;
+                    gpa = 1;
+                    break;
                 case 'F':
-                    return 0;
+                    gpa = 0;
+                    break;
             }
-            return 0;
+
+            if (IsWeighted && (studentType == StudentType.Honors || studentType == StudentType.DualEnrolled))
+                gpa++;
+            return gpa;
         }
 
         public virtual void CalculateStatistics()
