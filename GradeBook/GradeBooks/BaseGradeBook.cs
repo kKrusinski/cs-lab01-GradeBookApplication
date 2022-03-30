@@ -14,12 +14,14 @@ namespace GradeBook.GradeBooks
         public string Name { get; set; }
         public List<Student> Students { get; set; }
         public GradeBookType Type { get; set; }
+
         public bool IsWeighted { get; set; }
 
-        public BaseGradeBook(string name, bool isWeigthed)
+
+        public BaseGradeBook(string name, bool IsWeight)
         {
+            IsWeighted = IsWeight;
             Name = name;
-            IsWeighted = isWeigthed;
             Students = new List<Student>();
         }
 
@@ -85,27 +87,12 @@ namespace GradeBook.GradeBooks
                 return null;
             }
 
-            BaseGradeBook gradeBook;
-
-
             using (var file = new FileStream(name + ".gdbk", FileMode.Open, FileAccess.Read))
             {
                 using (var reader = new StreamReader(file))
                 {
                     var json = reader.ReadToEnd();
                     return ConvertToGradeBook(json);
-                    var type = Enum.Parse(typeof(GradeBookType), JObject.GetValue("Type").ToString(), true);
-                    switch (type)
-                    {
-                        case GradeBookType.Standard:
-                            gradeBook = JsonConvert.DeserializeObject<StandardGradeBook>(json);
-                            break;
-                        case GradeBookType.Ranked:
-                            gradeBook = JsonConvert.DeserializeObject<RankedGradeBook>(json);
-                            break;
-                    }
-
-                    return gradeBook;
                 }
             }
         }
@@ -124,29 +111,39 @@ namespace GradeBook.GradeBooks
 
         public virtual double GetGPA(char letterGrade, StudentType studentType)
         {
-            var gpa = 0;
-            switch (letterGrade)
+            if (IsWeighted == true && (studentType == StudentType.Honors || studentType == StudentType.DualEnrolled))
             {
-                case 'A':
-                    gpa = 4;
-                    break;
-                case 'B':
-                    gpa = 3;
-                    break;
-                case 'C':
-                    gpa = 2;
-                    break;
-                case 'D':
-                    gpa = 1;
-                    break;
-                case 'F':
-                    gpa = 0;
-                    break;
+                switch (letterGrade)
+                {
+                    case 'A':
+                        return 5;
+                    case 'B':
+                        return 4;
+                    case 'C':
+                        return 3;
+                    case 'D':
+                        return 2;
+                    case 'F':
+                        return 1;
+                }
             }
-
-            if (IsWeighted && (studentType == StudentType.Honors || studentType == StudentType.DualEnrolled))
-                gpa++;
-            return gpa;
+            else
+            {
+                switch (letterGrade)
+                {
+                    case 'A':
+                        return 4;
+                    case 'B':
+                        return 3;
+                    case 'C':
+                        return 2;
+                    case 'D':
+                        return 1;
+                    case 'F':
+                        return 0;
+                }
+            }
+            return 0;
         }
 
         public virtual void CalculateStatistics()
@@ -290,7 +287,7 @@ namespace GradeBook.GradeBooks
                              from type in assembly.GetTypes()
                              where type.FullName == "GradeBook.GradeBooks.StandardGradeBook"
                              select type).FirstOrDefault();
-            
+
             return JsonConvert.DeserializeObject(json, gradebook);
         }
     }
